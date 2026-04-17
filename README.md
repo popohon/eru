@@ -1,3 +1,5 @@
+# Documentation and Assigment Answer link [here](https://github.com/popohon/eru/tree/main/docs)
+
 # Erudify - Senior Data Engineer Assignment (Option 1 Implementation)
 This project implements a **local-first, Dockerized data pipeline** that answers the assignment in `manual.md` with:
 - Open-source tools only (no cloud dependency)
