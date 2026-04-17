@@ -172,19 +172,16 @@ What happened in this stage:
 - use it to verify end-to-end freshness after DAG runs
 
 ## 9) Assumptions
-## 8) Assumptions
 1. `loanbook.xlsx` has no currency column, so local currency defaults to `IDR` (`LOCAL_CURRENCY_CODE` env var).
 2. FX file values represent **local currency per 1 USD** (for example IDR around 14,000+), so conversion to USD uses division.
 3. `fx_rate.xlsx` non-date marker cells (for example `FY2024`) are ignored during date parsing.
 ## 10) Assignment Answer Documents
-## 9) Assignment Answer Documents
 - `docs/01_assignment_architecture.md`
 - `docs/02_fx_data_model.md`
 - `docs/03_pipeline_orchestration.md`
 - `docs/04_data_quality_with_gx.md`
 - `docs/05_thought_process_and_tooling.md`
 ## 11) Stop Services
-## 10) Stop Services
 ```bash
 docker compose down
 ```
@@ -192,24 +189,4 @@ docker compose down
 To also remove volumes:
 ```bash
 docker compose down -v
-```
-
-## 12) Sync PPT with README + Docs (1:1 Copy)
-The repository includes `scripts/generate_ppt_from_docs.py` and a Makefile target that regenerates `ppt.pptx` from:
-- `README.md`
-- `docs/01_assignment_architecture.md`
-- `docs/02_fx_data_model.md`
-- `docs/03_pipeline_orchestration.md`
-- `docs/04_data_quality_with_gx.md`
-- `docs/05_thought_process_and_tooling.md`
-
-First-time setup for local PPT generation:
-```bash
-python3 -m venv .venv
-.venv/bin/pip install python-pptx
-```
-
-Regenerate deck:
-```bash
-make ppt-sync
 ```
