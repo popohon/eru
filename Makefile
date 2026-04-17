@@ -26,7 +26,6 @@ help:
 	@printf "  make query-mart        # inspect USD mart output table\n"
 	@printf "  make query-latest-fx   # inspect latest FX view\n"
 	@printf "  make query-stage-audit # stage-level row count + date range sanity checks\n\n"
-	@printf "  make ppt-sync          # regenerate ppt.pptx as 1:1 copy from README/docs\n\n"
 
 env:
 	@if [[ ! -f .env ]]; then cp .env.example .env; echo ".env created from .env.example"; else echo ".env already exists"; fi
