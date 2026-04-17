@@ -1,0 +1,121 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: erudify-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-airflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airflow}
+      POSTGRES_DB: ${POSTGRES_DB:-airflow}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-airflow}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  airflow-init:
+    build:
+      context: .
+      dockerfile: airflow/Dockerfile
+    container_name: erudify-airflow-init
+    env_file:
+      - .env
+    user: "${AIRFLOW_UID:-50000}:0"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@postgres:5432/${POSTGRES_DB:-airflow}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/project/airflow/dags
+      PYTHONPATH: /opt/airflow/project
+      WAREHOUSE_DB_URI: ${WAREHOUSE_DB_URI:-postgresql+psycopg2://airflow:airflow@postgres:5432/warehouse}
+      FX_RATE_FILEPATH: ${FX_RATE_FILEPATH:-/opt/airflow/project/fx_rate.xlsx}
+      LOANBOOK_FILEPATH: ${LOANBOOK_FILEPATH:-/opt/airflow/project/loanbook.xlsx}
+      LOCAL_CURRENCY_CODE: ${LOCAL_CURRENCY_CODE:-IDR}
+    volumes:
+      - ./:/opt/airflow/project
+      - airflow_logs:/opt/airflow/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      bash -c "airflow db migrate &&
+      airflow users create
+      --role Admin
+      --username ${AIRFLOW_USER:-admin}
+      --password ${AIRFLOW_PASSWORD:-admin}
+      --email admin@example.com
+      --firstname Airflow
+      --lastname Admin || true"
+
+  airflow-webserver:
+    build:
+      context: .
+      dockerfile: airflow/Dockerfile
+    container_name: erudify-airflow-webserver
+    env_file:
+      - .env
+    user: "${AIRFLOW_UID:-50000}:0"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@postgres:5432/${POSTGRES_DB:-airflow}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/project/airflow/dags
+      AIRFLOW__WEBSERVER__RBAC: "True"
+      PYTHONPATH: /opt/airflow/project
+      WAREHOUSE_DB_URI: ${WAREHOUSE_DB_URI:-postgresql+psycopg2://airflow:airflow@postgres:5432/warehouse}
+      FX_RATE_FILEPATH: ${FX_RATE_FILEPATH:-/opt/airflow/project/fx_rate.xlsx}
+      LOANBOOK_FILEPATH: ${LOANBOOK_FILEPATH:-/opt/airflow/project/loanbook.xlsx}
+      LOCAL_CURRENCY_CODE: ${LOCAL_CURRENCY_CODE:-IDR}
+    volumes:
+      - ./:/opt/airflow/project
+      - airflow_logs:/opt/airflow/logs
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    command: webserver
+    restart: unless-stopped
+
+  airflow-scheduler:
+    build:
+      context: .
+      dockerfile: airflow/Dockerfile
+    container_name: erudify-airflow-scheduler
+    env_file:
+      - .env
+    user: "${AIRFLOW_UID:-50000}:0"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@postgres:5432/${POSTGRES_DB:-airflow}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/project/airflow/dags
+      PYTHONPATH: /opt/airflow/project
+      WAREHOUSE_DB_URI: ${WAREHOUSE_DB_URI:-postgresql+psycopg2://airflow:airflow@postgres:5432/warehouse}
+      FX_RATE_FILEPATH: ${FX_RATE_FILEPATH:-/opt/airflow/project/fx_rate.xlsx}
+      LOANBOOK_FILEPATH: ${LOANBOOK_FILEPATH:-/opt/airflow/project/loanbook.xlsx}
+      LOCAL_CURRENCY_CODE: ${LOCAL_CURRENCY_CODE:-IDR}
+    volumes:
+      - ./:/opt/airflow/project
+      - airflow_logs:/opt/airflow/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    command: scheduler
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  airflow_logs:
